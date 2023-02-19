@@ -8,6 +8,8 @@
  * Address space of RAM 0x8000_0000 - a000_0000 (512MB)
  */
 
+
+
 int main()
 {
   int n;
@@ -16,7 +18,7 @@ int main()
   if ((fptr = fopen("../../riscv-tests/isa/rv64ui-p-add","rb")) == NULL){
     printf("Error! opening file");
 
-    // Program exits if the file pointer returns NULL.
+    // Program exits if the file pointer returns NULL
     exit(1);
   }
 
@@ -40,8 +42,45 @@ int main()
     fclose(fptr);
     exit(1);
   }
+
+  // this is assuming program header table is immediately after elf_header
+  struct program_header program_header_table[header.phentsize]; // phentsize contains the number of entries in program header
+
+  fread(&program_header_table, sizeof(struct program_header), header.phnum, fptr);
+
+  printf("PROGRAM HEADER TABLE\n");
+  for (int i = 0; i < header.phnum; i++){
+    printf("\
+header entry %d \
+Type: 0x%x  \
+Offset: 0x%lx \
+VirtAddr: 0x%lx \
+PhysAddr: 0x%lx \
+Filesiz: 0x%lx  \
+MemSiz: 0x%lx \
+Flags: 0x%x \
+Align: 0x%lx  \n", i, 
+    program_header_table[i].seg_type, program_header_table[i].off, program_header_table[i].vaddr, program_header_table[i].paddr,
+    program_header_table[i].filesz, program_header_table[i].memsz, program_header_table[i].flags, program_header_table[i].align);
+
+    // executable should not require MMU
+    if (program_header_table[i].paddr != program_header_table[i].vaddr) {
+      printf("Emulator does not support MMU\n");
+      fclose(fptr);
+      exit(1);
+    }
+    
+  }
+  
   fclose(fptr); 
 
   return 0;
 }
+  // please don't delete might be needed in future
+    //Xil_Out32(SLCR_UNLOCK_ADDR, UNLOCK_KEY);
 
+    //Xil_Out32(FPGA_RST_CTRL, PL_CLR_MASK);
+    //Xil_Out32(FPGA_RST_CTRL, PL_RST_MASK);
+    //Xil_Out32(FPGA_RST_CTRL, PL_CLR_MASK);
+
+    //Xil_Out32(SLCR_LOCK_ADDR, LOCK_KEY);

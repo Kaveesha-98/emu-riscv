@@ -71,6 +71,19 @@ Align: 0x%lx  \n", i,
     }
     
   }
+
+  // amount of bytes read to get the position elf we are at
+  unsigned int bytes_read = header.ehsize + header.phentsize * header.phnum;
+
+  unsigned char padding;
+  for (int i = 0; i < program_header_table[0].off - bytes_read; i++)
+  {
+    fread(&padding, sizeof(unsigned char ), 1, fptr);
+  }
+  
+  // programming ram
+  // ram address space is 0x8000_0000 to 0xA000_0000
+  unsigned char ram[5];
   
   fclose(fptr); 
 

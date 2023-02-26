@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <stdlib.h>
 // source: https://osblog.stephenmarz.com/ch11.html 
 
 struct elf_header {
@@ -32,4 +34,20 @@ struct program_header {
   unsigned long filesz;
   unsigned long memsz;
   unsigned long align;
+};
+
+void sort_program_header_table(struct program_header program_header_table[], unsigned int length) {
+  // uses insertion sort
+  struct program_header temp;
+  for (int i = 1; i < length; i++) {
+    for (int j = i-1; j >= 0; j--) {
+      if (program_header_table[j].off > program_header_table[j+1].off) {
+        //printf("%d %d\n", i, j);
+        temp = program_header_table[j];
+        program_header_table[j] = program_header_table[j+1];
+        program_header_table[j+1] = temp;
+      }
+    }
+  }
+  
 };

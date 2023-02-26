@@ -1,13 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "elf.h"
+#include "emu.h"
 
 /**
  * This is a riscv emulator(Incomplete)
  * Currently support for S priv is not planned
  * Address space of RAM 0x8000_0000 - a000_0000 (512MB)
  */
-
 
 
 int main()
@@ -35,7 +35,7 @@ int main()
     header.obj_type != 2 && // should be executable type
     header.machine != 0xf3 && // expects a RISCV machine code
     header.version != 0x02 && // should be original elf file(no idea what this means)
-    (header.entry_addr < 0x80000000 || header.entry_addr > 0xa0000000) && // program needs to be in RAM address space
+    (header.entry_addr < RAM_BASE_ADDRESS || header.entry_addr > RAM_HIGH_ADDRESS) && // program needs to be in RAM address space
     header.phoff != 0x40 // this value is expected for program header of 64-bit
   ) {
     printf("Some header fields did not match what was expected\n");
@@ -47,6 +47,19 @@ int main()
   struct program_header program_header_table[header.phentsize]; // phentsize contains the number of entries in program header
 
   fread(&program_header_table, sizeof(struct program_header), header.phnum, fptr);
+
+  
+
+  // amount of bytes read to get the position elf we are at
+  unsigned int bytes_read = header.ehsize + header.phentsize * header.phnum;
+
+  unsigned char padding_byte;
+  /* for (int i = 0; i < program_header_table[0].off - bytes_read; i++)
+  {
+    fread(&padding, sizeof(unsigned char ), 1, fptr);
+  } */
+
+  sort_program_header_table(program_header_table, header.phnum);
 
   printf("PROGRAM HEADER TABLE\n");
   for (int i = 0; i < header.phnum; i++){
@@ -71,21 +84,41 @@ Align: 0x%lx  \n", i,
     }
     
   }
-
-  // amount of bytes read to get the position elf we are at
-  unsigned int bytes_read = header.ehsize + header.phentsize * header.phnum;
-
-  unsigned char padding;
-  for (int i = 0; i < program_header_table[0].off - bytes_read; i++)
-  {
-    fread(&padding, sizeof(unsigned char ), 1, fptr);
+  
+  // ram address space is 0x8000_0000 to 0xA000_0000
+  // initializing ram
+  for (int i = 0; i < (1 << 29); i++) {
+    ram[0] = 0;
   }
   
+  
+
   // programming ram
-  // ram address space is 0x8000_0000 to 0xA000_0000
-  unsigned char ram[5];
+
+  for (int  i = 0; i < header.phnum; i++) {
+    // removing padding from earlier section
+    for (int j = 0; j < program_header_table[i].off - bytes_read; j++) {
+      fread(&padding_byte, sizeof(unsigned char ), 1, fptr);
+    }
+    
+    if ((program_header_table[i].paddr < RAM_BASE_ADDRESS || program_header_table[i].paddr > RAM_HIGH_ADDRESS) && program_header_table[i].memsz == 0) {
+      printf("Program accesses an address space no addressed by RAM\n");
+      fclose(fptr);
+      exit(1);
+    }
+
+    if (program_header_table[i].memsz != 0) {
+      fread(&ram[program_header_table[i].paddr - RAM_BASE_ADDRESS], sizeof(unsigned char), program_header_table[i].memsz, fptr);
+    }
+
+    bytes_read = program_header_table[i].off + program_header_table[i].memsz;
+  }
   
   fclose(fptr); 
+
+  // finished reading elf file
+  // emulating
+  emulate(ram, header.entry_addr);
 
   return 0;
 }

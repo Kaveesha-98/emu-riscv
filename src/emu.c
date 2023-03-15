@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "elf.h"
 #include "emu.h"
+#include <string.h>
 
 /**
  * This is a riscv emulator(Incomplete)
@@ -10,12 +11,12 @@
  */
 
 
-int main()
-{
+int main( int argc, char *argv[] ) {
   int n;
   FILE *fptr;
 
-  if ((fptr = fopen("../../riscv-tests/isa/rv64ui-p-add","rb")) == NULL){
+  //if ((fptr = fopen((strcat("../../cpu-test/target_binaries/", "add.out")),"rb")) == NULL){
+  if ((fptr = fopen(argv[1],"rb")) == NULL){
     printf("Error! opening file");
 
     // Program exits if the file pointer returns NULL
@@ -61,9 +62,9 @@ int main()
 
   sort_program_header_table(program_header_table, header.phnum);
 
-  printf("PROGRAM HEADER TABLE\n");
+  //printf("PROGRAM HEADER TABLE\n");
   for (int i = 0; i < header.phnum; i++){
-    printf("\
+    /* printf("\
 header entry %d \
 Type: 0x%x  \
 Offset: 0x%lx \
@@ -75,7 +76,7 @@ Flags: 0x%x \
 Align: 0x%lx  \n", i, 
     program_header_table[i].seg_type, program_header_table[i].off, program_header_table[i].vaddr, program_header_table[i].paddr,
     program_header_table[i].filesz, program_header_table[i].memsz, program_header_table[i].flags, program_header_table[i].align);
-
+ */
     // executable should not require MMU
     if (program_header_table[i].paddr != program_header_table[i].vaddr) {
       printf("Emulator does not support MMU\n");
@@ -101,8 +102,8 @@ Align: 0x%lx  \n", i,
       fread(&padding_byte, sizeof(unsigned char ), 1, fptr);
     }
     
-    if ((program_header_table[i].paddr < RAM_BASE_ADDRESS || program_header_table[i].paddr > RAM_HIGH_ADDRESS) && program_header_table[i].memsz == 0) {
-      printf("Program accesses an address space no addressed by RAM\n");
+    if ((program_header_table[i].paddr < RAM_BASE_ADDRESS || program_header_table[i].paddr > RAM_HIGH_ADDRESS) && program_header_table[i].memsz != 0) {
+      printf("Program accesses an address space not addressed by RAM\n");
       fclose(fptr);
       exit(1);
     }

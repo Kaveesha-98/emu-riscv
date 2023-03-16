@@ -90,6 +90,7 @@ int emulate(unsigned char mem[], unsigned long entry_point) {
   enum gpr r1, r2, r3;
 
   while (1) {
+    printf("pc: %lx\n", pc);
     // get instruction
     if (!mem_read(pc, 0b010, &load_data)) {
       printf("Error loading pc %lx", pc);

@@ -10,18 +10,22 @@
  * Address space of RAM 0x8000_0000 - a000_0000 (512MB)
  */
 
+//#define ELF_CONFIG
+
 
 int main( int argc, char *argv[] ) {
-  int n;
+  //int n;
   FILE *fptr;
 
-  //if ((fptr = fopen((strcat("../../cpu-test/target_binaries/", "add.out")),"rb")) == NULL){
   if ((fptr = fopen(argv[1],"rb")) == NULL){
     printf("Error! opening file");
 
     // Program exits if the file pointer returns NULL
     exit(1);
   }
+
+  #ifdef ELF_CONFIG
+  //if ((fptr = fopen((strcat("../../cpu-test/target_binaries/", "add.out")),"rb")) == NULL){
 
   struct elf_header header;
 
@@ -115,12 +119,27 @@ Align: 0x%lx  \n", i,
     bytes_read = program_header_table[i].off + program_header_table[i].memsz;
   }
   
-  fclose(fptr); 
+  
 
   // finished reading elf file
   // emulating
   emulate(ram, header.entry_addr);
+  #endif
 
+  #ifndef ELF_CONFIG
+  int ram_addr = 0;
+  while (fread(&ram[ram_addr], sizeof(unsigned char), 1, fptr)) {
+    ram_addr++;
+  }
+
+  while (RAM_BASE_ADDRESS + ram_addr <= RAM_HIGH_ADDRESS) {
+    ram[ram_addr++] = 0;
+  }
+  
+  emulate(ram, 0x80000000);
+  #endif
+
+  fclose(fptr); 
   return 0;
 }
   // please don't delete might be needed in future

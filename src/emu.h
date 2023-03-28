@@ -35,7 +35,7 @@ int emulate(unsigned char mem[], unsigned long entry_point) {
   for (int i = 0; i < 4096; i++) {
     csr[i] = 0;
   }
-   
+  csr[MSTATUS] = 0x0000002200001800;
 
   unsigned long pc = entry_point;
   unsigned int instruction;
@@ -161,16 +161,16 @@ int emulate(unsigned char mem[], unsigned long entry_point) {
       ((instruction & 127) == 0b0010011) || 
       ((instruction & 127) == 0b0110011) || 
       ((instruction & 127) == 0b0011011) || 
-      ((instruction & 127) == 0b0111011) 
+      ((instruction & 127) == 0b0111011) ||
+      ((instruction & 127) == 0b1110011)
     ) {
       gprs[(instruction >> 7) & 31] = wb_res[(instruction >> 2) & 7][(instruction >> 5) & 3];
     };
     gprs[0] = 0;
-    if (((instruction >> 15) & 31) != 0 && ((instruction) & 127) == 0b1110011) {
+    if (((instruction >> 15) & 31) != 0 && ((instruction) & 127) == 0b1110011 && (instruction != 0x00000073)) {
       csr[(instruction >> 20) & 4095] = new_system_val[(instruction >> 12) & 7];
     }
-    
-
+    csr[MSTATUS] = 0x0000002200001800;
     // next pc calc
     reg_compare[0] = (rs1 == rs2);
     reg_compare[1] = (rs1 != rs2);
@@ -191,15 +191,13 @@ int emulate(unsigned char mem[], unsigned long entry_point) {
       pc = csr[MEPC];
     }
     if (instruction == 0x00000073) {
+      csr[MCAUSE] = 11;
       pc = csr[MTVEC];
     }
     
     r1 = a4;
     r2 = t2;
     r3 = gp;
-    // printf("%lx %lx %lx %lx\n", pc, gprs[a4], imm_u, gprs[t2]);
-    printf("%lx %lx %lx\n", pc, gprs[a0], gprs[zero]);
-    // int x = getchar();
   }
   
 }

@@ -197,6 +197,8 @@ int emulate(unsigned char mem[], unsigned long entry_point) {
     
     r1 = a4;
     r2 = t2;
+
+    
     r3 = gp;
   }
   
